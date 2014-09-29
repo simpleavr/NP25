@@ -16,14 +16,13 @@ Look for C_SPICE #define in np25.c to try hp-25c or hp-34c roms. Default is hp-2
 
 
 September 2014, cc
-. this is a preview release upon request, project is not bugs free.
-
-. based on TI msp430g25x3 mcu, 16KB flash, 512B ram
-. based on work from Eric Smith's nonpariel
-. emualtes woodstock or spice core
-. this is a hobby project not suitable for any use.
-. please observe same GPL licensing terms as the original Nonpariel package
-. notice from orignal Nonpareil package
+* this is a preview release upon request, project is not bugs free.
+* based on TI msp430g25x3 mcu, 16KB flash, 512B ram
+* based on work from Eric Smith's nonpariel
+* emualtes woodstock or spice core
+* this is a hobby project not suitable for any use.
+* please observe same GPL licensing terms as the original Nonpariel package
+* notice from orignal Nonpareil package
 
 Copyright 1995, 2003, 2004, 2005 Eric L. Smith <eric@brouhaha.com>
 
