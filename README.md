@@ -4,6 +4,13 @@ NP Calculator Emulator
 ======================
 Nonpariel Physical (NP) is an standalone calculator microcode emulator
 
+Features
+_________________
+* selectable rom from HP-21, HP-25C and HP-33C.
+* press-n-hold + switch on to select one of the three ROMSs.
+* a setup menu to set the default ROM to use, plus ability to set speed (fast / slow).
+* both 25C and 33C programs are stored separately.
+* a greetings message set and show, handy as a gift item
 
 Description
 ___________
@@ -12,8 +19,12 @@ Compile w/ (example only, substitute w/ your setup path)
 
 /msp430-gcc -Os -Wall -ffunction-sections -fdata-sections -fno-inline-small-functions -Wl,-Map=np25.map,--cref -Wl,--relax -Wl,--gc-sections -I /cygdrive/c/mspgcc-20120406-p20120502/bin/../msp430/include -mmcu=msp430g2553 -o np25.elf np25.c
 
-Look for C_SPICE #define in np25.c to try hp-25c or hp-34c roms. Default is hp-25c.
-
+October 2014, cc
+* major code clean-up
+* includes power-on switchable roms for 21, 25C and 33C
+* allow defaults (rom and speed) be saved
+* add greeting message
+* rom_34c.h, rom for 34C is included for further development only, not emulated at this version
 
 September 2014, cc
 * this is a preview release upon request, project is not bugs free.
@@ -49,23 +60,27 @@ __________
 * msp430g2553 (or other G series dip 20pin devices w/ 16k flash)
 * 2x sparkfun 4 digit bubble led module
 * 32x tactile buttons
-* 2x CR2032 SMD battery holder
-* 1x LP2950-33 LDO regulator
+* 1x CR2032 SMD battery holder
 * 1x 47k, 1x 1k resistors
-* 2x 100nF, 1x 1nF capacitor
-* 1x 10uF tantalum capacitor
+* 2x 100nF (104), 1x 1nF (102) capacitor
 
 Application Notes
 _________________
 
-* tba
+* press-n-hold 1st row, 5th column (from top) for hp33C
+* press-n-hold 2nd row, 5th column for hp25C
+* press-n-hold 3nd row, 5th column for hp21
+* press-n-hold 4th row, 4th column for version info
+* press-n-hold 1st row, 4th column to show greetings
+* press-n-hold 1st row, 3rd column to edit greetings, use 0-9 to enter numbers and letters, Run/Stop to advance digit, Cls to abandon entry
+* press-n-hold Pgm/Run toggle button to edit default startup settings, use 'F' key to select rom, 'G' key to select speed, Pgm/Run will save setting and exit setup
 
 
 Schematic
 _________
 
 
-    * runs off 3V button cell, or 3.3V regulator (circuit to be added)
+    * runs off 3V button cell
 
                MSP430G25x3
              -----------------    

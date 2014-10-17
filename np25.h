@@ -31,7 +31,6 @@ typedef uint8_t digit_t;
 typedef digit_t reg_t [WSIZE];
 typedef digit_t creg_t [WSIZE/2];
 
-
 #ifdef C_SPICE
 
 #define C_LEFT_SCAN		(WSIZE-2)
@@ -717,8 +716,12 @@ static void op_test_s_eq_1 (int opcode) {
 		act_reg->flags |= F_CARRY;
 }
 
-static const uint8_t p_set_map[16] = { 14,  4,  7,  8, 11,  2, 10, 12,  1,  3, 13,  6,  0,  9,  5, 14 };
-static const uint8_t p_test_map[16] = {  4,  8, 12,  2,  9,  1,  6,  3,  1, 13,  5,  0, 11, 10,  7,  4 };
+static const 
+//__attribute__ ((section (".data_fe"))) 
+uint8_t p_set_map[16] = { 14,  4,  7,  8, 11,  2, 10, 12,  1,  3, 13,  6,  0,  9,  5, 14 };
+static const 
+//__attribute__ ((section (".data_fe"))) 
+uint8_t p_test_map[16] = {  4,  8, 12,  2,  9,  1,  6,  3,  1, 13,  5,  0, 11, 10,  7,  4 };
 
 static void op_set_p (int opcode) {
 	act_reg->p = p_set_map [opcode >> 6];
@@ -824,18 +827,18 @@ static void (* const _op_fcn [64])(int) = {
 
 #ifdef C_STANDALONE
 
-uint8_t sim_load_segments(uint8_t digit) {
-	if (!(act_reg->flags & F_DISPLAY_ON)) return 0;
-#ifdef C_SPICE
-	uint8_t segs=0, i=13-digit;
-	if (digit == 0) {
-		if (act_reg->b[12] & 0x04) segs = CHAR_MINUS;
+static const uint8_t *_key_map=0;
+
+static void sim_check_key(uint8_t key) {
+	if (_key_map[key]) {
+		//woodstock_press_key(_key_map[key]);
+		act_reg->key_buf = _key_map[key];
+		act_reg->flags |= F_KEY;
 	}//if
-	else {
-		segs = seg_map[act_reg->a[i]];
-		if (act_reg->b[i] & 0x01) segs |= CHAR_DOT;
-	}//else
-#else
+}
+
+static uint8_t sim_load_segments_woodstock(uint8_t digit) {
+	if (!(act_reg->flags & F_DISPLAY_ON)) return 0;
 	uint8_t segs=0, i=13-digit;
 	if (act_reg->b[i] & 0x02) {
 		if (act_reg->a[i] == 9) segs = CHAR_MINUS;
@@ -844,11 +847,32 @@ uint8_t sim_load_segments(uint8_t digit) {
 		segs = seg_map[act_reg->a[i]];
 		if (act_reg->b[i] & 0x01) segs |= CHAR_DOT;
 	}//else
-#endif
-
 	return segs;
-
 }
+
+static uint8_t sim_load_segments_spice(uint8_t digit) {
+	if (!(act_reg->flags & F_DISPLAY_ON)) return 0;
+	uint8_t segs=0, i=13-digit;
+	if (digit < 11) {			// 12th digit blank?
+		if (digit == 0) {
+			if (act_reg->b[12] & 0x04) segs = CHAR_MINUS;
+		}//if
+		else {
+			if (act_reg->b[i] == 6) {
+				if (act_reg->a[i] == 9) segs |= CHAR_MINUS;
+			}//if
+			else {
+				segs = act_reg->a[i];
+				if (segs==0x0b) segs = 0x10;		// show 'H' instead of 'F'
+				segs = seg_map[segs];
+				if (act_reg->b[i] & 0x01) segs |= CHAR_DOT;	// should be dot and comma, oh well
+			}//else
+		}//else
+	}//if
+	return segs;
+}
+
+static uint8_t (*sim_load_segments) (uint8_t digit) = sim_load_segments_woodstock;
 
 #else
 
@@ -942,7 +966,7 @@ static void spice_display_scan() {
 		_display_segments [act_reg->display_digit_position++] = 0;  /* make room for sign */
 
 	if (act_reg->flags & F_DISPLAY_ON) {
-		if ((act_reg->display_scan_position == C_LEFT_SCAN) && (b & 4))
+		if ((act_reg->display_scan_position == /*C_LEFT_SCAN*/14-1) && (b & 4))
 		_display_segments[0] = CHAR_MINUS;
 		if (b == 6) {
 			if (a == 9) segs = CHAR_MINUS;
@@ -1049,10 +1073,12 @@ static bool woodstock_execute_instruction () {
 	return true;
 }
 
+/*
 static void woodstock_press_key (uint8_t keycode) {
 	act_reg->key_buf = keycode;
 	act_reg->flags |= F_KEY;
 }
+*/
 
 static void woodstock_release_key () {
 	act_reg->flags &= ~F_KEY;
@@ -1100,6 +1126,31 @@ static void woodstock_clear_memory () {
 		reg_zero (act_reg->ram [addr], 0, WSIZE/2 - 1);
 }
 
+static uint8_t _is_spice=0;
+static void woodstock_set_rom(uint8_t which) {
+	switch (which) {
+		case 3:		// 21
+			_is_spice = 0;
+			_key_map = key_map_21;
+			act_reg->rom = rom_21;
+			act_reg->rom_ex = rom_21_ex;
+			break;
+		case 2:		// 25
+			_is_spice = 0;
+			_key_map = key_map_25c;
+			act_reg->rom = rom_25c;
+			act_reg->rom_ex = rom_25c_ex;
+			break;
+		default:
+		case 1:		// 33
+			_is_spice = 1;
+			_key_map = key_map_33c;
+			act_reg->rom = rom_33c;
+			act_reg->rom_ex = rom_33c_ex;
+			break;
+	}//switch
+}
+
 static void woodstock_new_processor() {
 	//act_reg = malloc (sizeof (act_reg_t));
 #ifdef C_SPICE
@@ -1113,18 +1164,21 @@ static void woodstock_new_processor() {
 #endif
 
 #ifdef C_STANDALONE
+	sim_load_segments = _is_spice ? sim_load_segments_spice : sim_load_segments_woodstock;
 #else
 	act_reg->display_scan_position = C_LEFT_SCAN;
 	act_reg->display_digit_position = 0;
 #endif
 	woodstock_reset();
+/* retired, now runtime slect
 #ifdef C_SPICE
-	act_reg->rom = rom_34c;
-	act_reg->rom_ex = rom_34c_ex;
+	act_reg->rom = rom_33c;
+	act_reg->rom_ex = rom_33c_ex;
 #else
 	act_reg->rom = rom_25c;
 	act_reg->rom_ex = rom_25c_ex;
 #endif
+*/
 	woodstock_clear_memory();
 }
 

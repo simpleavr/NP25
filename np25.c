@@ -50,14 +50,14 @@ MA 02111, USA.
 #ifdef EMBEDDED
 
 #define G2553
-#define MHZ	8
+#define MHZ	12
 
 #include <msp430.h>
 #include "../local/common.h"
 
 #ifdef C_STANDALONE
-static volatile uint16_t ticks = 0;
-static volatile uint8_t clicks = 1;
+static volatile uint16_t _ticks = 0;
+static volatile uint8_t _clicks = 1;
 
 /*
 
@@ -131,13 +131,17 @@ static volatile uint8_t clicks = 1;
 
 #ifdef C_PCB
 
-static const uint8_t digit_map_p1[] = {
+static const 
+//__attribute__ ((section (".data_fe"))) 
+uint8_t digit_map_p1[] = {
 	0x00, 1<<0, 0x00, 1<<1,
 	1<<2, 1<<3, 0x00, 1<<4,
 	1<<5, 0x00, 1<<6, 1<<7,
 };
 
-static const uint8_t digit_map_p2[] = {
+static const 
+//__attribute__ ((section (".data_fe"))) 
+const uint8_t digit_map_p2[] = {
 	1<<6, 0x00, 1<<7, 0x00,
 	0x00, 0x00, 1<<0, 0x00,
 	0x00, 1<<1, 0x00, 0x00,
@@ -211,7 +215,9 @@ static const uint8_t digit_map_p2[] = {
 	digit_map_p2[4]|digit_map_p2[5]|digit_map_p2[6]|digit_map_p2[7]|	\
 	digit_map_p2[8]|digit_map_p2[9]|digit_map_p2[10]|digit_map_p2[11])
 
-static const uint8_t seg_map[] = {
+static const 
+//__attribute__ ((section (".data_fe"))) 
+uint8_t seg_map[] = {
    SEG_A|SEG_B|SEG_C|SEG_D|SEG_E|SEG_F,
    SEG_B|SEG_C,
    SEG_A|SEG_B|SEG_D|SEG_E|SEG_G,
@@ -223,15 +229,48 @@ static const uint8_t seg_map[] = {
    SEG_A|SEG_B|SEG_C|SEG_D|SEG_E|SEG_F|SEG_G,
    SEG_A|SEG_B|SEG_C|SEG_D|SEG_F|SEG_G,
    SEG_E|SEG_G,	// r, H/F, o, p, e, blank
-#ifdef C_SPICE
-   SEG_B|SEG_C|SEG_E|SEG_F|SEG_G,
-#else
-   SEG_A|SEG_E|SEG_F|SEG_G,
-#endif
+//#ifdef C_SPICE
+//#else
+   SEG_A|SEG_E|SEG_F|SEG_G, 			
+//#endif
    SEG_C|SEG_D|SEG_E|SEG_G,
    SEG_A|SEG_B|SEG_E|SEG_F|SEG_G,
    SEG_A|SEG_D|SEG_E|SEG_F|SEG_G,
    0x00,
+   SEG_B|SEG_C|SEG_E|SEG_F|SEG_G, 		// for spice as 0xb
+   //________________ a to z
+   SEG_A|SEG_B|SEG_C|SEG_E|SEG_F|SEG_G,	// A
+   SEG_C|SEG_D|SEG_E|SEG_F|SEG_G,		// b
+   SEG_D|SEG_E|SEG_G,					// c
+   SEG_B|SEG_C|SEG_D|SEG_E|SEG_G,		// d
+   SEG_A|SEG_D|SEG_E|SEG_F|SEG_G,		// E
+   SEG_A|SEG_E|SEG_F|SEG_G,				// F
+   SEG_A|SEG_C|SEG_D|SEG_E|SEG_F,		// G
+   SEG_C|SEG_E|SEG_F|SEG_G,				// h
+   SEG_E|SEG_F,							// i
+   SEG_B|SEG_C|SEG_D,					// j
+   SEG_D|SEG_F|SEG_G,					// k
+   SEG_D|SEG_E|SEG_F,					// L
+   SEG_A|SEG_C|SEG_E,					// m
+   SEG_C|SEG_E|SEG_G,					// n
+   SEG_C|SEG_D|SEG_E|SEG_G,				// o
+   SEG_A|SEG_B|SEG_E|SEG_F|SEG_G,		// P
+   SEG_A|SEG_B|SEG_C|SEG_F|SEG_G,		// q
+   SEG_E|SEG_G,							// r
+   SEG_A|SEG_C|SEG_D|SEG_F|SEG_G,		// S
+   SEG_D|SEG_E|SEG_F|SEG_G,				// t
+   SEG_C|SEG_D|SEG_E,					// u
+   SEG_C|SEG_D|SEG_E|SEG_F,				// v
+   SEG_B|SEG_D|SEG_F,					// w
+   SEG_B|SEG_C|SEG_E|SEG_F|SEG_G,		// X
+   SEG_B|SEG_C|SEG_D|SEG_F|SEG_G,		// y
+   SEG_A|SEG_B|SEG_D|SEG_E|SEG_G,		// Z
+   SEG_A|SEG_D|SEG_E|SEG_F|SEG_G,		// [
+   SEG_A|SEG_B|SEG_F,					// ^
+   SEG_A|SEG_B|SEG_C|SEG_D|SEG_G,		// ]
+   SEG_C|SEG_F|SEG_G,					// blackslash
+   SEG_D,								// _
+   SEG_B,								// '
 };
 
 /*
@@ -267,36 +306,6 @@ raw scancode on pcb version, code is digit * 4 + [123] for [XYZ]
    scan lines X, Y, Z
 
 */
-static const uint8_t key_map[] = {		// 12 digits (no digit 6) x 3 scan lines
-#ifdef C_SPICE
-	0x00, 0xd3, 0x43, 0x63, 
-	0x00, 0x34, 0x94, 0x73,
-	0x00, 0xd2, 0x42, 0x62, 
-	0x00, 0x33, 0x93, 0x73,	//0x72,
-	0x00, 0x32, 0x92, 0x71, 
-	0x00, 0x00, 0xa3, 0xa2,
-	0x00, 0x00, 0x00, 0x00, 
-	0x00, 0x71, 0x91, 0xa1,
-	0x00, 0x31, 0x30, 0x00, 
-	0x00, 0xd0, 0x40, 0x60,
-	0x00, 0x70, 0x90, 0xa0,
-	0x00, 0xd1, 0x41, 0x61,
-#else
-	0x00, 0x73, 0x93, 0xa3, 
-	0x00, 0xb3, 0x43, 0xd3,
-	0x00, 0x72, 0x92, 0xa2, 
-	0x00, 0xb2, 0x42, 0xd3,	//0xd2,
-	0x00, 0xb1, 0x41, 0xd1, 
-	0x00, 0x00, 0x63, 0x62,
-	0x00, 0x00, 0x00, 0x00, 
-	0x00, 0xd0, 0x40, 0x61,
-	0x00, 0xb0, 0xb4, 0x00, 
-	0x00, 0x70, 0x90, 0xa0,
-	0x00, 0xd4, 0x44, 0x60,
-	0x00, 0x71, 0x91, 0xa1,
-#endif
-};
-
 #else
 
 #include "../local/uart.h"
@@ -338,22 +347,27 @@ static const uint8_t key_map[256] = {
 
 #endif
 
-#ifdef C_SPICE
-#include "rom_34c.h"
-#else
+#define __USE_RAM	32	// our highest model 33c has 32 units
+
+#include "rom_21.h"
 #include "rom_25.h"
-#endif
+#include "rom_33c.h"
 #include "np25.h"
 
 static volatile uint8_t _pgm_run=1;
 static volatile uint8_t _state=0;
 static volatile uint8_t _key=0;
+static int8_t _greetings[12];
 
-#define ST_RAM_LOADED 		BIT0
-#define ST_KEY_PRESSED		BIT1
-#define ST_KEY_RELEASED		BIT2
-#define ST_HW_SLOW			BIT6
-#define ST_HW_TEST			BIT7
+#define ST_RAM_LOADED 		BIT7
+#define ST_KEY_PRESSED		BIT6
+#define ST_KEY_RELEASED		BIT5
+#define ST_ALPHA_MSG		BIT4
+#define ST_HW_SLOW			BIT3
+#define ST_HW_TEST			BIT2
+#define ST_ROM_BIT1			BIT1
+#define ST_ROM_BIT0  		BIT0
+#define ST_ROM				(ST_ROM_BIT1|ST_ROM_BIT0)
 
 /*
   base=142
@@ -365,18 +379,77 @@ static volatile uint8_t _key=0;
 */
 
 //________________________________________________________________________________
-void flash_write(uint16_t ptr, char *src, uint8_t cnt) {
-	volatile char *flash = (char*) ptr;
+void flash_write(uint8_t bank, char *src, uint8_t cnt) {
+	char *flash = (char*) 0x1040;
+	if (bank) flash += 0x40;
 	FCTL2 = FWKEY+FSSEL0+FN1;
 	FCTL1 = FWKEY+ERASE;
 	FCTL3 = FWKEY;
 	*flash = 0;
 
 	FCTL1 = FWKEY+WRT; 
+
 	uint8_t i;
 	for (i=0;i<cnt;i++) *flash++ = *src++;
+	*flash++ = _state;
+	if (!bank)
+		for (i=0;i<12;i++) *flash++ = _greetings[i];
+
 	FCTL1 = FWKEY;
 	FCTL3 = FWKEY+LOCK; 
+}
+
+#define _MSG_POS	act_reg->f
+#define _MSG_LEN	act_reg->p
+#define _EDIT_POS 	act_reg->key_buf
+#define _MSG_PTR	act_reg->rom
+#define _LAST_KEY	act_reg->flags
+
+//volatile uint8_t _MSG_POS=0, _MSG_LEN=0;
+//volatile const char *_MSG_PTR=0;
+
+/*
+hp-25 5
+pos 11 digit 0(x).......     11(h)
+pos 10 digit 0(x).......10(h)11(p)
+pos 2 digit 0(x)...9(h)10(p)11(-)
+*/
+
+
+//________________________________________________________________________________
+uint8_t char_at_digit(uint8_t digit) {
+	uint8_t seg=0;
+	if ((digit==_EDIT_POS) && (_ticks&0x200)) return 0;
+	if (digit>=_MSG_POS) {
+		uint8_t i = digit-_MSG_POS;
+		if (i < _MSG_LEN) {
+			if (_MSG_PTR[i] >= '0') { if (i >= 'A')
+					seg = seg_map[_MSG_PTR[i] - 32 - '0'];
+				else
+					seg = seg_map[_MSG_PTR[i] - '0'];
+			}//if
+		}//if
+	}//if
+	return seg;
+}
+//________________________________________________________________________________
+void show_msg(const uint8_t *msg, uint8_t delay_units) {
+
+	_MSG_PTR = msg;
+	while (*msg++) _MSG_LEN++;
+	_MSG_POS = 11;
+	_state |= ST_ALPHA_MSG;
+	//______ accelerate.....brake 6,5,4,3,2,1,2,3,4,5,6
+	//                            b,a,9,8,7,6,5,4,3,2,1
+	while (_MSG_POS--) {
+		_clicks = _MSG_POS>=6 ? _MSG_POS-5 : 6-_MSG_POS;
+		LPM0;
+	}//while
+	_MSG_POS = 0;
+
+	if (delay_units) _clicks = delay_units;
+	LPM0;
+	_state &= ~ST_ALPHA_MSG;
 }
 
 //________________________________________________________________________________
@@ -415,7 +488,6 @@ int main() {
 
 #endif
 
-	woodstock_new_processor();
  
 	/*
 	key_map['0'] = 0x92; key_map['1'] = 0x72; key_map['2'] = 0x71; key_map['3'] = 0x70;
@@ -426,25 +498,155 @@ int main() {
 	key_map['q'] = 0x43; key_map['w'] = 0x42; key_map['e'] = 0x41; key_map['r'] = 0x40; key_map['t'] = 0x44; // X.Y RV  STO RCL E+
 	key_map[' '] = 0xd3; key_map['z'] = 0xd1; key_map['x'] = 0xd0; key_map['c'] = 0xd4;					     // ETR ETR CHS EEX CLX
 	*/
+#define RAM_OFFSET	(7*9)
+#define RAM_SIZE	(7*7)		// 49 program steps
 
-	while (clicks) __asm("nop");
-	switch (_key) {		// hold + power_on enable session options
-		case 33:	// F key, h/w test
-			_state |= ST_HW_TEST;
+	woodstock_clear_memory();
+	//______ load from flash, we just need the status config, but we load everything since
+	//       we might need to write it back and flash always write in full blocks
+	uint8_t idx = RAM_SIZE + 1 + 12;	// 49 program steps + config byte + 12 byte greeting
+	while (idx--) ((char*) act_reg->ram)[idx+RAM_OFFSET] = *((char*) (0x1040+idx));
+	_state = ((char*) (act_reg->ram))[RAM_OFFSET+RAM_SIZE] & (ST_HW_SLOW|ST_ROM);
+
+	for (idx=0;idx<12;idx++) _greetings[idx] = ((uint8_t*) act_reg->ram)[RAM_OFFSET+50+idx];
+	_MSG_PTR = (uint8_t*) _greetings;
+
+	LPM0;
+
+	while (_key == 35) _state |= ST_HW_TEST;		// pgm key pressed, enter setup
+
+	_EDIT_POS = 99;
+	uint8_t save_state = _state;
+	switch (_key) {
+		//
+		case 17: 	// "goto" key for edit easter egg message
+			while (!(_state&ST_KEY_RELEASED)) __asm("nop");
+			_state &= ~ST_KEY_RELEASED;
+			{
+				uint8_t *p= (uint8_t*) _MSG_PTR;
+				//uint8_t i=0;
+				_EDIT_POS = 0;
+				_MSG_POS = 0;
+				_MSG_LEN = 12;
+				_LAST_KEY = 99;
+				_state |= ST_ALPHA_MSG;		// start show
+				while (1) {
+					LPM0;					// wait key
+					uint8_t k = _key;
+					if (k == 41) break;
+					if (k == 38) {
+						_EDIT_POS++;
+						p++;
+						_LAST_KEY = 99;
+						if (_EDIT_POS>=12) {
+							//__________ the last 12 bytes are the greetings
+							flash_write(0, (char*) act_reg->ram + RAM_OFFSET, RAM_SIZE);
+							break;
+						}//if
+					}//if
+					switch (k) {
+						case 10: k = 0; break;
+						case 9:  k = 1; break;
+						case 45: k = 2; break;
+						case 37: k = 3; break;
+						case 11: k = 4; break;
+						case 47: k = 5; break;
+						case 39: k = 6; break;
+						case 23: k = 7; break;
+						case 31: k = 8; break;
+						case 43: k = 9; break;
+						default: k = 10; break;
+					}//switch
+					const uint8_t key_adv[] = { 'A', 'D', 'G', 'J', 'M', 'P', 'T', 'W', '[', };
+					if (k < 10) {
+						if (k == _LAST_KEY) {
+							if (k >= 2) {
+								if (*p <= '9') {
+									*p = key_adv[k-2];
+								}//if
+								else {
+									*p = *p + 1;
+									if (*p == key_adv[k-1])
+										*p = '0' + k;
+								}//else
+							}//if
+							else {
+								if (k == 0) {
+									*p = *p == '0' ? '?' : '0';
+								}//if
+							}//else
+						}//if
+						else {
+							if (k < 10) {
+								*p = '0' + k;
+								_LAST_KEY = k;
+							}//if
+						}//else
+					}//if
+				}//while
+			}
+			_state &= ~ST_ALPHA_MSG;
 			break;
-		case 34:	// G key, slow CPU
-			_state |= ST_HW_SLOW;
+		//
+		case 33: 	// F key, show secret message
+			show_msg(_MSG_PTR, 100);
 			break;
-		default:
+		// right top, going down on same column
+		case 34: 
+			_state = 1;
+			show_msg((const uint8_t*) "HP33C ROM", 100);
+			break;
+		case 42: 
+			_state = 2;
+			show_msg((const uint8_t*) "HP25C ROM", 100);
+			break;
+		case 41: 
+			_state = 3;
+			show_msg((const uint8_t*) "HP21 ROM", 100);
+			break;
+		case 43:
+			show_msg((const uint8_t*) "HP25 VER 2", 100);
 			break;
 	}//switch
-	while (_key) __asm("nop");
+	if (save_state&ST_HW_SLOW) _state |= ST_HW_SLOW;
+
+	while (_state&ST_HW_TEST) {
+		LPM0;
+		switch (_key) {
+			case 35: 	// pgm/run key
+				_state &= ~ST_HW_TEST; 
+				flash_write(0, (char*) act_reg->ram + RAM_OFFSET, RAM_SIZE);
+				break;
+			case 33:	// F key to rotate rom
+			// 00..01, 01..10, 10..11, 11..01
+				if ((_state&ST_ROM)==0x03)
+					_state &= ~ST_ROM;
+				_state++;
+				break;
+			case 34:	// G key to toggle fast and slow cpu
+				_state ^= ST_HW_SLOW;
+				break;
+		}//switch
+	}//while
+
+	/*
+	if ((_state&ST_ROM)==0x02) {	// 25c use alternate rom
+		uint8_t i = 7*16 + 1;
+		while (i--) ((char*) act_reg->ram)[i] = *((char*) (0x1040+i));
+	}//if
+	*/
+
+	woodstock_set_rom(_state&ST_ROM);
+	woodstock_new_processor();
+
 	_state &= ~(ST_RAM_LOADED|ST_KEY_PRESSED|ST_KEY_RELEASED);
 
 	uint8_t done=0;
+#ifdef C_STANDALONE
+#else
 	uint8_t c=0;
+#endif
 	uint8_t release_in=0;
-
 
 	woodstock_set_ext_flag (3, _pgm_run);		// set run mode
 
@@ -454,18 +656,28 @@ int main() {
 			if (_state & ST_KEY_PRESSED) {
 				if (!(_state&ST_RAM_LOADED)) {
 					//______ lets load ram from flash (pretend continous memory) at 1st key
-					_state |= ST_RAM_LOADED;
-					c = 7*__USE_RAM;
-					if (((char*) act_reg->ram)[c] != 0xff)
-						while (c--) ((char*) act_reg->ram)[c] = *((char*) (0xfc00+c));
+					//       need to do it here after cpu initialized
+					if (_pgm_run && ((_state&ST_ROM) != 0x03)) {
+						_state |= ST_RAM_LOADED;
+						char *src = (char*) 0x1040;
+						uint8_t c = RAM_SIZE;
+						if (!(_state&ST_ROM_BIT0)) src += 0x40;		// next infomem block for hp25
+						while (c--) ((char*) act_reg->ram)[c+RAM_OFFSET] = *(src + c);
+					}//if
 				}//if
 				if (_key == 35) {
 					woodstock_set_ext_flag (3, _pgm_run ^= 1);		// pgm-run toggle
 					//___ to run mode, write flash
-					if (_pgm_run) flash_write(0xfc00, (char*)act_reg->ram, 7*__USE_RAM);
+					if (_pgm_run && ((_state&ST_ROM) != 0x03)) {
+						uint16_t des = 0x1040;
+						if (!(_state&ST_ROM_BIT0)) des += 0x40;
+						flash_write(_state&ST_ROM_BIT0 ? 0 : 1,
+							(char*) act_reg->ram + RAM_OFFSET, RAM_SIZE);
+					}//if
 				}//if
 				else {
-					if (key_map[_key]) woodstock_press_key(key_map[_key]);
+					//if (session_key_map[_key]) woodstock_press_key(session_key_map[_key]);
+					sim_check_key(_key);
 				}//else
 				_state &= ~ST_KEY_PRESSED;
 			}//if
@@ -528,7 +740,7 @@ int main() {
 		}//if
 
 #ifdef EMBEDDED
-		if (_state&ST_HW_SLOW) __delay_cycles(1250);
+		if (_state&ST_HW_SLOW) __delay_cycles(MHZ*150);
 #else
 		//usleep(100);
 #endif
@@ -541,23 +753,32 @@ int main() {
 #ifdef EMBEDDED
 #ifdef C_STANDALONE
 
-volatile uint16_t _cnt=0;
 volatile uint8_t _data=0;
 volatile uint8_t _digit=0;
 volatile uint8_t _keyscan=0;
 
+//________________________________________________________________________________
 uint8_t hwtest_load_segments(uint8_t digit) {
-	static uint16_t _val = 0;
-	uint8_t res = 0;
+	uint8_t res = 0x0f;
 
-	if (digit == 0) _val = _cnt;
-	if (digit > 3 && digit < 8) {
-		res = seg_map[_val%10];
-		_val /= 10;
-	}//if
-	if (digit == 10) res = seg_map[_key/10];
-	if (digit == 11) res = seg_map[_key%10];
-	return res;
+	switch (digit) {
+		case 0: res = 'H'-'0'; break;
+		case 1: res = 'P'-'0'; break;
+		case 2: res = _state&ST_ROM_BIT1 ? 2 : 3; break;
+		case 3:
+			res = _state&ST_ROM_BIT0 ? (_state&ST_ROM_BIT1 ? 1 : 3) : 5; 
+			break; 
+		case 5: res = _state&ST_HW_SLOW ? 'S'-'0' : 'F'-'0'; break; 
+		case 6: res = _state&ST_HW_SLOW ? 'L'-'0' : 'A'-'0'; break; 
+		case 7: res = _state&ST_HW_SLOW ? 'O'-'0' : 'S'-'0'; break; 
+		case 8: res = _state&ST_HW_SLOW ? 'W'-'0' : 'T'-'0'; break; 
+		//case 7: res = _clicks/10; break;
+		//case 8: res = _clicks%10; break;
+		case 10: res = _key/10; break;
+		case 11: res = _key%10; break;
+	}//switch
+
+	return seg_map[res];
 }
 //________________________________________________________________________________
 #pragma vector=TIMER0_A0_VECTOR
@@ -574,7 +795,8 @@ __interrupt void Timer0_A0_iSR(void) {
 		}//if
 		else {
 			CLK_LOW;
-			__delay_cycles(6);
+			//__delay_cycles((MHZ*3)/4);
+			__delay_cycles(MHZ);
 			segs--;
 			CLK_HI;
 		}//else
@@ -583,9 +805,9 @@ __interrupt void Timer0_A0_iSR(void) {
 	}//while
 
 	if (_digit == 12) {		// key scanning cycle
+		uint8_t i;
 		if (_key) {
 			//_____ check for key release
-			uint8_t i;
 			i = _key>>2;
 			P2OUT &= ~digit_map_p2[i];
 			P1OUT &= ~digit_map_p1[i];
@@ -593,11 +815,11 @@ __interrupt void Timer0_A0_iSR(void) {
 				if (_key != 35) _state |= ST_KEY_RELEASED;
 				_key = 0;
 			}//if
+			__delay_cycles(MHZ*100);
 		}//if
 		else {
-			uint8_t i;
-
-			for (i=0;i<12;!_key&&i++) {
+			//for (i=0;i<12;!_key&&i++) {
+			for (i=0;i<12;i++) {
 				if (i!=6) {
 					//P2OUT |= ALL_DIGITS_P2;
 					//P1OUT |= ALL_DIGITS_P1;
@@ -605,12 +827,13 @@ __interrupt void Timer0_A0_iSR(void) {
 					P1OUT &= ~digit_map_p1[i];
 
 					if ((SPIN&ALL_SCANS) != ALL_SCANS) {
-						if (!(SPIN&SCANX)) _key = 1+(i<<2);
 						if (!(SPIN&SCANY)) _key = 2+(i<<2);
-						if (!(SPIN&SCANZ)) _key = 3+(i<<2);
+						else if (!(SPIN&SCANZ)) _key = 3+(i<<2);
+						else if (!(SPIN&SCANX)) _key = 1+(i<<2);
 						// SCAN XYZ BIT 5,4,3
 						if (_key) {
 							_state |= ST_KEY_PRESSED;
+							LPM0_EXIT;
 							//_key = key;
 							break;
 						}//if
@@ -625,7 +848,7 @@ __interrupt void Timer0_A0_iSR(void) {
 		//______ done shifting segments, turn on digit if register says so
 		//
 		//
-		if (act_reg->flags & F_DISPLAY_ON) {
+		if (act_reg->flags&F_DISPLAY_ON || _state&(ST_ALPHA_MSG|ST_HW_TEST)) {
 			P1OUT &= ~digit_map_p1[_digit];
 			P2OUT &= ~digit_map_p2[_digit];
 		}//if
@@ -633,7 +856,7 @@ __interrupt void Timer0_A0_iSR(void) {
 		//
 		//TA0CCR0 += MHZ * 1000;	// time till next, 1ms per digit
 		// load balance led brightness
-		segs += 4;	// 7..15
+		segs += 6;	// 7..15
 		TA0CCR0 += MHZ * segs * 60;
 	}//else
 
@@ -644,24 +867,35 @@ __interrupt void Timer0_A0_iSR(void) {
 	}//if
 	else {
 		_digit++;
+		// less frequent key scanning for led brightness
+		if (_digit==12 && _keyscan++&0x03) _digit = 0;
 	}//else
 
-	// less frequent key scanning for led brightness
-	if (_digit==12 && _keyscan++&0x03) _digit = 0;
 
 	//if (_key && !digit) _data = seg_map[_key/3];
 	//if (_key) _data = seg_map[0xe];
 
-	if (_digit == 12) 
+	if (_digit == 12) {
 		_data = 0;		// key scan cycle, blank all segments
-	else
-		_data = _state&ST_HW_TEST ? hwtest_load_segments(_digit) : sim_load_segments(_digit);
+	}//if
+	else {
+		if (_state&ST_ALPHA_MSG) {
+			//_data = _alpha_msg[_digit];
+			_data = char_at_digit(_digit);
+		}//if
+		else {
+			if (_state&ST_HW_TEST)
+				_data = hwtest_load_segments(_digit);
+			else
+				_data = sim_load_segments(_digit);
+		}//else
+	}//else
 		
 	//
-	ticks++;
-	if (!(ticks%100)) {
-		if (clicks) clicks--;
-		_cnt++;
+	_ticks++;
+	if (!(_ticks%50) && _clicks) {
+		_clicks--;
+		if (!_clicks) LPM0_EXIT;
 	}//if
 	//
 }
@@ -683,7 +917,7 @@ __interrupt void Timer0_A0_ISR (void) {
 //________________________________________________________________________________
 #pragma vector=WDT_VECTOR
 __interrupt void WDT_ISR (void) {
-	//ticks++;
+	//_ticks++;
 }
 #endif
 
