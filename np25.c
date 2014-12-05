@@ -53,7 +53,14 @@ MA 02111, USA.
 #define MHZ	12
 
 #include <msp430.h>
-#include "../local/common.h"
+//#include "../local/common.h"
+//
+#define ___use_cal_clk(x)	\
+BCSCTL1 = CALBC1_##x##MHZ;	\
+DCOCTL  = CALDCO_##x##MHZ;
+
+#define __use_cal_clk(x)	___use_cal_clk(x)
+//
 
 #ifdef C_STANDALONE
 static volatile uint16_t _ticks = 0;
@@ -458,7 +465,8 @@ int main() {
 #ifdef EMBEDDED
     WDTCTL  = WDTPW + WDTHOLD; 	// Stop WDT
 	__use_cal_clk(MHZ);
-	FCTL2 = FWKEY + FSSEL0 + FN1;	// MCLK/3 for Flash Timing Generator
+	//FCTL2 = FWKEY + FSSEL0 + FN1;	// MCLK/3 for Flash Timing Generator
+	FCTL2 = FWKEY + FSSEL0 + FN2;	// for 12Mhz
 
 #ifdef C_STANDALONE
 
