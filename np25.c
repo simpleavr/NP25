@@ -613,7 +613,7 @@ int main() {
 			show_msg((const uint8_t*) "HP21 ROM", 100);
 			break;
 		case 43:
-			show_msg((const uint8_t*) "NP25 VER 2", 100);
+			show_msg((const uint8_t*) "NP25 VER 3", 100);
 			break;
 	}//switch
 	if (save_state&ST_HW_SLOW) _state |= ST_HW_SLOW;
