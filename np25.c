@@ -389,7 +389,7 @@ static int8_t _greetings[12];
 void flash_write(uint8_t bank, char *src, uint8_t cnt) {
 	char *flash = (char*) 0x1040;
 	if (bank) flash += 0x40;
-	FCTL2 = FWKEY+FSSEL0+FN1;
+	FCTL2 = FWKEY+FSSEL0+FN2;
 	FCTL1 = FWKEY+ERASE;
 	FCTL3 = FWKEY;
 	*flash = 0;
