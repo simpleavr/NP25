@@ -1,0 +1,112 @@
+<html>
+<head><link rel="stylesheet" type="text/css" href=".././default.css"></head>
+<body>
+<br>
+<h2>NP25 Calculator</h2><br>
+<p><b>msp430 Based Calculator Emulator for the HP-21, HP-25C, and HP-33C Calculators.</b></p>
+<br><br><iframe width="560" height="315" src="https://www.youtube.com/embed/WwPM0slZro4" frameborder="0" allow="autoplay; encrypted-media" allowfullscreen></iframe>
+<br><br>
+<br><img src="images/NP25.jpg"><img src="images/np25_01.jpg"><br><br>
+<h3>Description</h3><br>
+<p>This is a hardware realization of Eric Smith's Nonpareil microcode simulator. </p>
+<p>The objective of the project is to re-create popular 70's RPN calculators such as the HP Woodstock and Spice series. </p>
+<p>Another goal of this project is to have the design as simple as possible so that the project can be re-produced by the average electronic hobbyist. </p>
+<p>A low power MSP430G2553 is used in this project. The DIP profile allows easy soldering. Only through-hole components are used. LED multiplexing is done w/ a 74hc164 shift register. LED modules are direct driven w/ pulsing to eliminate the need of current drivers. </p>
+<p>LED modules are used to mimic the original 70's calculators and gives a retro look to the end product. </p>
+<h3>Application Notes</h3><br>
+<ul>
+<li>press-n-hold 1st row, 5th column (from top) for hp33C</li>
+<li>press-n-hold 2nd row, 5th column for hp25C</li>
+<li>press-n-hold 3nd row, 5th column for hp21</li>
+<li>press-n-hold 4th row, 4th column for version info</li>
+<li>press-n-hold 1st row, 4th column to show greetings</li>
+<li>press-n-hold 1st row, 3rd column to edit greetings, use 0-9 to enter numbers and letters, Run/Stop to advance digit, Cls to abandon entry</li>
+<li>press-n-hold Pgm/Run toggle button to edit default startup settings, use 'F' key to select rom, 'G' key to select speed, Pgm/Run will save setting and exit setup</li>
+</ul>
+</>
+</>
+<h3>Parts and Components</h3><br>
+<br><img src="images/np25_parts.jpg"><br><br>
+<br><br>
+<ul>
+<li>1× MSP430G25x3, TI 16bit MCU w/ 16K Flash 512 byte RAM</li>
+<li>1× 74HC164, TTL shift register</li>
+<li>3× HP QDSP-6064 LED Module from Sparkfun, 4 digit 7 segment led module</li>
+<li>32× SMT Tactile Button 6x3mm, May be substituted w/ through-hole buttons</li>
+<li>1× CR2032 Battery Holder</li>
+</ul>
+<h3>Schematic</h3><br>
+<pre>
+<p>
+<code>
+* runs off 3V button cell
+
+           MSP430G25x3
+         -----------------
+     /|\|                 |
+      | |                 |
+      --|RST  digit 0 P2.6|--\
+        |     digit 1 P1.0|--\       digits bus (12)
+        |     digit 2 P2.7|-----//--+---------+
+        |     digit 3 P1.1|--/      |         ~  3 units of 4 digits bubble led
+        |     digit 4 P1.2|--/      |         |
+        |     digit 5 P1.3|--/      |    +---------+ +---------+ +---------+
+        |     digit 6 P2.0|--/      |    | % % % % | | % % % % | | % % % % |----+
+        |     digit 7 P1.4|--/      ~    +---------+ +---------+ +---------+    |
+        |     digit 8 P1.5|--/      |                                           |
+        |     digit 9 P2.1|--/      | digits bus x 3 scan lines                 |
+        |     digit a P1.6|--/      +-----+-----+---/ ~~ /--+-----+-----+-----+ |
+        |     digit b P1.7|--/  _=_ | _=_ | _=_ | _/ ~~ /=_ | _=_ | _=_ | _=_ | |
+        |      scan X P2.5|-----o o-+-o o-+-o o-+-/ ~~ /o o-+-o o-+-o o-+-o o-+ |
+        |      scan Y P2.4|-----o o-+-o o-+-o o-+/ ~~ /-o o-+-o o-+-o o-+-o o-+ |
+        |      scan Z P2.3|-----o o-+-o o-+-o o-/ ~~ /+-o o-+-o o-+-o o-+-o o-+ |
+        |                 |                                                     ~
+        |                 |      (32 tactile button)                            |
+        |                 |                                                     |
+        |                 |        +--------+                                   |
+        |             P2.2|--+---->|CLK ~CLR|---+---- Vcc                       |
+        |                 |  |     |       B|---+                               |
+        |                 |  |     |  0(d)QA|-\                                 |
+        |                 |  |     |  1(f)QB|-\                segments bus (8) |
+        |                 |  -     |  2(b)QC|--------------//-------------------+
+        |                 | | |    |  3(a)QD|-/
+        |                 | | |1k  |  4(g)QE|-/  74hc164 segment driver
+        |                 |  -     |  5(e)QF|-/
+        |                 |  |     |  6(c)QG|-/
+        |                 |  +---->|A 7(h)QH|-/
+        |                 |  |     +--------+
+        |                 | === (102)    1 wire shift register via RC delay
+        |                 | ===  1nF	 to shift 1, Hi-Low-Hi
+        +-----------------+  |           to shift 0, Hi-Looooooow-Hi (>20us Lo)
+                            ___
+                            ///
+</code>
+</p>
+</pre>
+<h3>Printed Circuit Board</h3><br>
+<br><img src="images/np25_pcb.jpg"><br><br>
+<br><br>
+<p>Create PCB board from the Fritzing design file included in my <a href="https://github.com/simpleavr/NP25">github repository</a>.</p>
+<p>You will need to install <a href="http://fritzing.org/home/">Fritzing</a> and learn how to use it.</p>
+<p>Fabricate PCB yourself or order from a FAB house (export Gerber files from Fritzing).</p>
+<p>Acquire parts from the components list.</p>
+<h3>Soldering</h3><br>
+<p>The two layer PCB was designed to minimize component space, and as such, components are placed on both side of the PCB. The ICs and LED modules actually intrudes into each other's footprint as they are through hole components. To address this issue, both the ICs and the LED modules need to have their pins trimmed so that they do not protrude into the other side of the PCB.</p>
+<br><img src="images/np25_solder01.jpg"><br><br>
+<br><br>
+<p>It is best to place and solder the LED modules first. There are three of them and when finished soldering, use a wire cutter / trimmer to trim off the pins on the other side. This will allow proper placement of the ICs.</p>
+<br><img src="images/np25_solder02.jpg"><br><br>
+<br><br>
+<p>Next we need to trim the IC pins before placing them onto the PCB. As the other side of the through holes are blocked by the LED modules, they will not fit without trimming the pins.</p>
+<br><img src="images/np25_solder03.jpg"><br><br>
+<br><br>
+<p>With the ICs placed on the PCB. We could commence soldering them. This has to be done on the IC component (back) side instead of the usual solder (front) side. This is because the LED modules on the front side block the holes.</p>
+<br><img src="images/np25_solder04.jpg"><br><br>
+<br><br>
+<p>The rest of the components including the tactile switches and other passive components can be soldered the usual way.</p>
+<h3>Software and Programming Tools</h3><br>
+<p>Acquire a MSP430 MCU programmer. We need this to program the MCU. Easiest and least expensive way is to get a <a href="http://www.ti.com/tool/MSP-EXP430G2">TI LaunchPad G2</a> and use it as a programmer.</p>
+<p>Download and install GCC compiler for MSP430. There are instructions on the web. You can also <a href="http://energia.nu">install Energia</a> and use the GCC compiler in the bundle.</p>
+<br><br>
+</body>
+</html>
